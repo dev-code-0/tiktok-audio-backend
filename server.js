@@ -5,6 +5,9 @@ const ytDlp = require('yt-dlp-exec');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const os = require('os');
+const axios = require('axios');
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -12,8 +15,30 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(bodyParser.json());
 
+// Función para resolver la URL de TikTok si es un enlace acortado
+async function resolveTikTokUrl(url) {
+  try {
+    const response = await fetch(url, { method: 'HEAD', redirect: 'follow' });
+    return response.url;
+  } catch (error) {
+    console.error('Error al resolver la URL de TikTok:', error);
+    throw new Error('No se pudo resolver la URL de TikTok');
+  }
+}
+
+
+
 app.post('/download', async (req, res) => {
-  const { url } = req.body;
+  let { url } = req.body; // Cambiado a 'let' para permitir reasignación
+
+
+  
+  try {
+    // Resolver la URL si es un enlace acortado de TikTok
+    if (url.includes('vm.tiktok.com')) {
+      const response = await axios.get(url);
+      url = response.request.res.responseUrl; // Obtener la URL final tras la redirección
+    }
 
   // Obtener la ruta a la carpeta Descargas del usuario
   const downloadsFolder = path.join(os.homedir(), 'Downloads');
@@ -32,8 +57,7 @@ app.post('/download', async (req, res) => {
     '--ffmpeg-location', ffmpegPath
   ];
 
-  try {
-    await ytDlp(ydlOpts);
+  await ytDlp(ydlOpts);
     res.download(outputPath, `audio_${uniqueId}.mp3`);
   } catch (error) {
     console.error('Error al descargar el audio:', error);

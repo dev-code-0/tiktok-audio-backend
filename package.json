@@ -11,9 +11,11 @@
   "author": "Yo",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.7.7",
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
     "express": "^4.21.1",
+    "node-fetch": "^3.3.2",
     "uuid": "^10.0.0",
     "yt-dlp-exec": "^1.0.2"
   }
