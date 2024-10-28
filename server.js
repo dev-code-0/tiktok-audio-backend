@@ -8,7 +8,6 @@ const os = require('os');
 const axios = require('axios');
 const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
 
-
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -26,38 +25,33 @@ async function resolveTikTokUrl(url) {
   }
 }
 
-
-
 app.post('/download', async (req, res) => {
-  let { url } = req.body; // Cambiado a 'let' para permitir reasignación
+  let { url } = req.body;
 
-
-  
   try {
     // Resolver la URL si es un enlace acortado de TikTok
     if (url.includes('vm.tiktok.com')) {
-      const response = await axios.get(url);
-      url = response.request.res.responseUrl; // Obtener la URL final tras la redirección
+      url = await resolveTikTokUrl(url);
     }
 
-  // Obtener la ruta a la carpeta Descargas del usuario
-  const downloadsFolder = path.join(os.homedir(), 'Downloads');
-  const uniqueId = uuidv4(); // Generar un identificador único para cada archivo
-  const outputPath = path.resolve(downloadsFolder, `audio_${uniqueId}.mp3`); // Guardar en Descargas
+    // Obtener la ruta a la carpeta temporal del servidor
+    const downloadsFolder = path.join(os.tmpdir(), 'downloads');
+    const uniqueId = uuidv4(); // Generar un identificador único para cada archivo
+    const outputPath = path.resolve(downloadsFolder, `audio_${uniqueId}.mp3`);
 
-  const ffmpegPath = 'C:\\Visual Studio Code\\React\\ffmpeg\\ffmpeg-7.1-essentials_build\\bin';
+    const ydlOpts = [
+      url,
+      '--format', 'bestaudio/best',
+      '--extract-audio',
+      '--audio-format', 'mp3',
+      '--audio-quality', '192K',
+      '-o', outputPath,
+    ];
 
-  const ydlOpts = [
-    url,
-    '--format', 'bestaudio/best',
-    '--extract-audio',
-    '--audio-format', 'mp3',
-    '--audio-quality', '192K',
-    '-o', outputPath,
-    '--ffmpeg-location', ffmpegPath
-  ];
+    // Descargar el audio usando yt-dlp
+    await ytDlp(ydlOpts);
 
-  await ytDlp(ydlOpts);
+    // Enviar el archivo descargado al cliente
     res.download(outputPath, `audio_${uniqueId}.mp3`);
   } catch (error) {
     console.error('Error al descargar el audio:', error);

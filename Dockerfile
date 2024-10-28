@@ -1,8 +1,8 @@
 # Usa una imagen base de Node.js
 FROM node:18
 
-# Instalar Python3 y FFmpeg
-RUN apt-get update && apt-get install -y python3 ffmpeg
+# Instala ffmpeg y otras herramientas necesarias
+RUN apt-get update && apt-get install -y ffmpeg
 
 # Crear directorio de la aplicación
 WORKDIR /app
